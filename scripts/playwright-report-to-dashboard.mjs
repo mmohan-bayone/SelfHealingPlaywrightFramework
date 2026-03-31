@@ -58,7 +58,10 @@ function collectTests(suite, titlePath, fileHint, out) {
 async function main() {
   if (!reportPath) throw new Error('Usage: node scripts/playwright-report-to-dashboard.mjs <report.json>')
   if (!dashboardUrl) throw new Error('Missing DASHBOARD_URL')
-  if (!token) throw new Error('Missing DASHBOARD_INGEST_TOKEN')
+  if (!token) {
+    console.log('Skipping dashboard ingest: DASHBOARD_INGEST_TOKEN is not set.')
+    return
+  }
   if (!existsSync(reportPath)) {
     throw new Error(
       `Report file not found: ${reportPath}. Ensure Playwright JSON reporter wrote this path ` +

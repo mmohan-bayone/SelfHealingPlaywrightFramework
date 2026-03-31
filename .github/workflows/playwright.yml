@@ -56,9 +56,9 @@ jobs:
           if-no-files-found: ignore
 
       # Best-effort: do not fail the workflow if the dashboard API is down (e.g. Render cold start / network).
+      # Do not use `secrets.*` in `if:` — GitHub rejects it. The script exits 0 when the token is unset.
       - name: Publish results to dashboard
-        # `secrets` is only valid inside ${{ }} expressions (bare `if:` cannot use secrets.*).
-        if: ${{ always() && secrets.DASHBOARD_INGEST_TOKEN != '' }}
+        if: always()
         continue-on-error: true
         env:
           DASHBOARD_URL: https://realtime-testing-dashboard-api.onrender.com
