@@ -6,6 +6,22 @@ const dashboardUrl = (process.env.DASHBOARD_URL || '').replace(/\/$/, '')
 const token = process.env.DASHBOARD_INGEST_TOKEN || ''
 const reportPath = process.argv[2]
 
+function getDashboardFetchTimeoutMs() {
+  return Math.min(
+    Math.max(Number(process.env.DASHBOARD_FETCH_TIMEOUT_MS) || 60_000, 5_000),
+    300_000
+  )
+}
+
+/** Node fetch often throws TypeError: fetch failed with the real reason on error.cause */
+function describeFetchError(e) {
+  const c = e?.cause
+  if (!c) return e?.message || String(e)
+  const bits = [c.code, c.errno, c.syscall, c.hostname, c.address, c.port].filter(Boolean)
+  const detail = bits.length ? ` (${bits.join(' ')})` : ''
+  return `${e.message}${detail}: ${c.message || c}`
+}
+
 function mapStatus(playwrightStatus) {
   switch (playwrightStatus) {
     case 'passed':
@@ -61,13 +77,20 @@ async function main() {
     test_cases: testCases,
   }
 
-  const res = await fetch(`${dashboardUrl}/api/ingest/github-actions/run`, {
+  const timeoutMs = getDashboardFetchTimeoutMs()
+  const signal = AbortSignal.timeout(timeoutMs)
+
+  const url = `${dashboardUrl}/api/ingest/github-actions/run`
+  console.log(`POST ${url} (timeout ${timeoutMs}ms, ${testCases.length} test case(s))`)
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Ingest-Token': token,
     },
     body: JSON.stringify(body),
+    signal,
   })
 
   const text = await res.text()
@@ -76,6 +99,17 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(e.message || e)
+  const isTimeout =
+    e?.name === 'TimeoutError' ||
+    e?.name === 'AbortError' ||
+    e?.cause?.name === 'TimeoutError'
+  if (isTimeout) {
+    console.error(
+      `Request timed out after ${getDashboardFetchTimeoutMs()}ms. Check ${dashboardUrl || '(DASHBOARD_URL)'} / API availability (cold starts on free tiers can be slow; raise DASHBOARD_FETCH_TIMEOUT_MS).`
+    )
+  } else {
+    console.error(describeFetchError(e))
+    if (e?.cause) console.error('cause:', e.cause)
+  }
   process.exit(1)
 })

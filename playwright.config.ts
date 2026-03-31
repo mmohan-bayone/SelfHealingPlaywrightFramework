@@ -4,6 +4,8 @@ const baseURL = process.env.BASE_URL ?? 'https://retail-website-two.vercel.app';
 
 export default defineConfig({
   testDir: './tests',
+  // Created when traces/screenshots/videos are written (e.g. failures); may be absent on all-green runs.
+  outputDir: 'test-results',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
