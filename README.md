@@ -134,6 +134,9 @@ This repo includes a workflow that runs on **push** and **pull requests**:
 - installs Playwright Chromium + OS deps (`npx playwright install --with-deps chromium`)
 - runs tests (`npx playwright test`)
 - uploads `playwright-report/` and `test-results/` as downloadable artifacts
+- optionally posts JSON results (`playwright-report/results.json`) to a dashboard via `scripts/playwright-report-to-dashboard.mjs` when `DASHBOARD_INGEST_TOKEN` is configured in repo secrets
+
+Reporters are defined in `playwright.config.ts` (including JSON at `playwright-report/results.json`). **Do not** pass `--reporter=...` on the command line in CI unless you repeat the same `outputFile`, or that JSON file will not be created.
 
 Workflow file: `.github/workflows/playwright.yml`
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { basename } from 'node:path'
 
 const dashboardUrl = (process.env.DASHBOARD_URL || '').replace(/\/$/, '')
@@ -43,6 +43,12 @@ async function main() {
   if (!reportPath) throw new Error('Usage: node scripts/playwright-report-to-dashboard.mjs <report.json>')
   if (!dashboardUrl) throw new Error('Missing DASHBOARD_URL')
   if (!token) throw new Error('Missing DASHBOARD_INGEST_TOKEN')
+  if (!existsSync(reportPath)) {
+    throw new Error(
+      `Report file not found: ${reportPath}. Ensure Playwright JSON reporter wrote this path ` +
+        `(see playwright.config.ts). Avoid overriding reporters on the CLI without the same json outputFile.`
+    )
+  }
 
   const report = JSON.parse(readFileSync(reportPath, 'utf8'))
   const testCases = []

@@ -8,7 +8,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['html'], ['json', { outputFile: 'playwright-report/results.json' }]],
+  reporter: [
+    ['list'],
+    ['html', { open: 'never', outputFolder: 'playwright-report' }],
+    ['json', { outputFile: 'playwright-report/results.json' }],
+  ],
   use: {
     baseURL,
     trace: 'on-first-retry',

@@ -32,8 +32,10 @@ jobs:
       - name: Install Playwright browsers (with OS deps)
         run: npx playwright install --with-deps chromium
 
+      # Do not pass --reporter here: it overrides playwright.config.ts and drops
+      # json.outputFile, so playwright-report/results.json is never written.
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html,json
+        run: npx playwright test
 
       - name: Upload HTML report
         if: always()
