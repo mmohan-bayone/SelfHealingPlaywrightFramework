@@ -134,9 +134,13 @@ This repo includes a workflow that runs on **push** and **pull requests**:
 - installs Playwright Chromium + OS deps (`npx playwright install --with-deps chromium`)
 - runs tests (`npx playwright test`)
 - uploads `playwright-report/` as an artifact; uploads `test-results/` (traces/screenshots) when **present**—on an all-green run this folder may not exist, so the workflow uses `if-no-files-found: ignore` for that artifact
-- optionally posts JSON results (`playwright-report/results.json`) to a dashboard via `scripts/playwright-report-to-dashboard.mjs`. The workflow passes `DASHBOARD_INGEST_TOKEN` from repo secrets; if it is unset, the script **skips** ingest (GitHub Actions does not allow `secrets` in `if:` conditions). CI runs a **warmup `curl`** to the dashboard base URL (Render free tier cold start), then ingest with `DASHBOARD_FETCH_TIMEOUT_MS` **300s** in CI (default **60s** locally). The step uses **`continue-on-error: true`** so a down or unreachable dashboard API does **not** fail the workflow when Playwright tests passed
+- **Dashboard ingest in CI is opt-in** (repo variable `DASHBOARD_INGEST_IN_CI=true` under **Settings → Secrets and variables → Actions → Variables**). If unset, CI skips dashboard steps so runs stay fast. When enabled, set secret `DASHBOARD_INGEST_TOKEN`; the workflow warms the API with `curl`, then runs `scripts/playwright-report-to-dashboard.mjs` with `DASHBOARD_FETCH_TIMEOUT_MS` **300s** in CI. **`continue-on-error: true`** keeps the job green if the external API still times out. **Playwright tests do not depend on the dashboard**—only the optional upload does.
+
+If `curl` shows **0 bytes** or always times out, the Render (or other) URL is not responding in time—check the Render dashboard, logs, and that the service is not suspended; raising timeouts alone will not fix a dead URL.
 
 Reporters are defined in `playwright.config.ts` (including JSON at `playwright-report/results.json`). **Do not** pass `--reporter=...` on the command line in CI unless you repeat the same `outputFile`, or that JSON file will not be created.
 
 Workflow file: `.github/workflows/playwright.yml`
+
+**Building the Real-Time Testing Dashboard API** (ingest contract, Render, GitHub): see [`docs/dashboard-ingest.md`](docs/dashboard-ingest.md).
 
